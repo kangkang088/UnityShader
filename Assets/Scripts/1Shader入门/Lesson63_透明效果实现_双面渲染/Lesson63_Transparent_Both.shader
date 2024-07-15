@@ -11,7 +11,7 @@ Shader "Unlit/Lesson63_Transparent_Both" {
         Tags { "Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent" }
         Pass {
             Tags { "LightMode" = "ForwardBase" }
-            
+
             //剔除正面，先渲染背面
             Cull Front
 
