@@ -4,14 +4,14 @@ Shader "Unlit/Lesson98_2DWater"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _Color("Color",Color) = (1,1,1,1)
-        //æ³¢åŠ¨å¹…åº¦
+        //²¨¶¯·ù¶È
         _WaveAmplitude("WaveAmplitude",Float) = 1 
-        //æ³¢åŠ¨é¢‘ç‡
+        //²¨¶¯ÆµÂÊ
         _WaveFrequency("WaveFrequency",Float) = 1
-        //æ³¢é•¿çš„å€’æ•°
+        //²¨³¤µÄµ¹Êı
         _InversalWaveLength("InversalWaveLength",Float) = 1
 
-        //çº¹ç†å˜åŒ–é€Ÿåº¦
+        //ÎÆÀí±ä»¯ËÙ¶È
         _Speed("Speed",Float) = 1
     }
     SubShader
@@ -47,9 +47,9 @@ Shader "Unlit/Lesson98_2DWater"
             {
                 v2f o;
 
-                //æ¨¡å‹ç©ºé—´ä¸‹çš„åç§»ä½ç½®
+                //Ä£ĞÍ¿Õ¼äÏÂµÄÆ«ÒÆÎ»ÖÃ
                 float4 offset;
-                //è®©xè½´æ–¹å‘ï¼ˆæ¨¡å‹ç©ºé—´ï¼‰åç§»
+                //ÈÃxÖá·½Ïò£¨Ä£ĞÍ¿Õ¼ä£©Æ«ÒÆ
                 offset.x = sin(_Time.y * _WaveFrequency + v.vertex.z * _InversalWaveLength) * _WaveAmplitude;
                 offset.yzw = float3(0,0,0);
                 o.vertex = UnityObjectToClipPos(v.vertex + offset);
