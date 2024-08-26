@@ -3,35 +3,29 @@
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-        _Color("Color",Color) = (1,1,1,1)
-        _VerticalBillboard("VerticalBillboard",Range(0,1)) = 1 //0-垂直广告牌 1-全向广告牌
+        _Color("Color", Color) = (1,1,1,1)
+        //用于控制垂直广告牌和全向广告牌的变化
+        _VerticalBillboard("VerticalBillboard", Range(0,1)) = 1
     }
     SubShader
     {
-        Tags
-        {
-            "RenderType"="Transparent"
-            "Queue"="Transparent"
-            "IgnoreProjector"="True"
-            "DisableBatching"="True"
-        }
+        Tags { "RenderType"="Transparent" "Queue"="Transparent" "IgnoreProjector"="True" "DisableBatching"="True" }
 
         Pass
         {
             ZWrite Off
             Blend SrcAlpha OneMinusSrcAlpha
             Cull Off
-            
+
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            
+
             #include "UnityCG.cginc"
-            
 
             struct v2f
             {
-                float uv : TEXCOORD0;
+                float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
             };
 
@@ -40,46 +34,45 @@
             fixed4 _Color;
             float _VerticalBillboard;
 
-            v2f vert(appdata_base v)
+            v2f vert (appdata_base v)
             {
                 v2f o;
-
-                //新坐标戏中心点（默认使用模型空间坐标系原点）
+                //新坐标系的中心点（默认我们还是使用的模型空间原定）
                 float3 center = float3(0,0,0);
-                
-                //calculate z（normal）
-                float3 cameraInObjectPos = mul(unity_WorldToObject,float4(_WorldSpaceCameraPos,1));
-                //view dir(z)
+                //计算Z轴（normal）
+                float3 cameraInObjectPos = mul(unity_WorldToObject, float4(_WorldSpaceCameraPos, 1));
+                //得到Z轴对应的向量
                 float3 normalDir = cameraInObjectPos - center;
+                //相当于把y往下压，如果_VerticalBillboarding是0 就代表把我们Z轴压到了xz平面 如果是1 那么就是正常的视角方向
                 normalDir.y *= _VerticalBillboard;
+                //单位化Z轴
                 normalDir = normalize(normalDir);
+                //模型空间下的Y轴正方向 作为它的 old up
+                //为了避免z轴和010重合 ，因为重合后再计算叉乘 可能会得到0向量
+                float3 upDir = normalDir.y > 0.999 ? float3(0,0,1) : float3(0,1,0);
+                //利用叉乘计算X轴（right）
+                float3 rightDir = normalize(cross(upDir, normalDir));
+                //去计算我们的Y轴 也就是newup
+                upDir = normalize(cross(normalDir, rightDir));
 
-                //z may be close close to y(0,1,0),will get 0 by zero Vector.
-                //calculate x(right)
-                float3 upDir = normalDir.y > 0.999 ? float3(0,0,1) : float3(0,1,0);//Y dir in objectSpace(old up)
-                //use cross
-                float3 rightDir = normalize(cross(upDir,normalDir));
-
-                //calculate y(new up) by cross
-                upDir = normalize(cross(rightDir,normalDir));
-
-                //calculate vertex's offset face to new coordinate
+                //得到顶点相对于新坐标系中心点的偏移位置
                 float3 centerOffset = v.vertex.xyz - center;
+                //利用3个轴向进行最终的顶点位置的计算
+                float3 newVertexPos = center + rightDir * centerOffset.x + upDir * centerOffset.y + normalDir * centerOffset.z;
+                //把新顶点转换到裁剪空间
+                o.vertex = UnityObjectToClipPos(float4(newVertexPos, 1));
 
-                //calculate new vertex(actually,is dot)
-                float3 newVertex = center + rightDir * centerOffset.x + upDir * centerOffset.y + normalDir * centerOffset.z;
-
-                o.vertex = UnityObjectToClipPos(float4(newVertex,1));
+                //uv坐标偏移缩放
                 o.uv = v.texcoord.xy * _MainTex_ST.xy + _MainTex_ST.zw;
-                
-                return o; 
+
+                return o;
             }
 
-            fixed4 frag(v2f i) : SV_Target
+            fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 color = tex2D(_MainTex,i.uv);
+                float4 color = tex2D(_MainTex, i.uv);
                 color.rgb *= _Color.rgb;
-                return  color;
+                return color;
             }
             ENDCG
         }
